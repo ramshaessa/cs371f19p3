@@ -1,19 +1,22 @@
 package edu.luc.cs.laufer.cs473.expressions
 
+import scala.collection.mutable.Map
+import behaviors._
+
 object CombinatorCalculator extends App {
+
+  var repMap = scala.collection.mutable.Map.empty[String, Value] //takes String and value. X is the key and value is number 3
 
   def processExpr(input: String): Unit = {
     println("You entered: " + input)
-    val result = CombinatorParser.parseAll(CombinatorParser.expr, input)
+    val result = CombinatorParser.parseAll(CombinatorParser.topLevel, input)
     if (result.isEmpty) {
       println("This expression could not be parsed")
     } else {
-      import behaviors._
       val expr = result.get
       println("The parsed expression is: ")
       println(toFormattedString(expr))
-      println("It has size " + size(expr) + " and height " + height(expr))
-      println("It evaluates to " + evaluate(expr))
+      println("It evaluates to " + evaluate(repMap, expr))
     }
   }
 

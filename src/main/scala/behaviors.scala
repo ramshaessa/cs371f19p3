@@ -1,17 +1,36 @@
 package edu.luc.cs.laufer.cs473.expressions
 
 import ast._
+import scala.collection.mutable.Map
 
 object behaviors {
 
-  def evaluate(e: Expr): Int = e match {
-    case Constant(c) => c
-    case UMinus(r)   => -evaluate(r)
-    case Plus(l, r)  => evaluate(l) + evaluate(r)
-    case Minus(l, r) => evaluate(l) - evaluate(r)
-    case Times(l, r) => evaluate(l) * evaluate(r)
-    case Div(l, r)   => evaluate(l) / evaluate(r)
-    case Mod(l, r)   => evaluate(l) % evaluate(r)
+  sealed trait Value
+  case class Number(value: Int) extends Value
+
+  object Value {
+    val NULL = Number(0)
+  }
+
+  def evaluate(repMap: Map[String, Value], e: Expr): Value = e match {
+    case Constant(c)            => Number(c)
+    case UMinus(r)              => Number(-evaluate(repMap, r).asInstanceOf[Number].value)
+    case Plus(l, r)             => Number(evaluate(repMap, l).asInstanceOf[Number].value + evaluate(repMap, r).asInstanceOf[Number].value)
+    case Minus(l, r)            => Number(evaluate(repMap, l).asInstanceOf[Number].value - evaluate(repMap, r).asInstanceOf[Number].value)
+    case Times(l, r)            => Number(evaluate(repMap, l).asInstanceOf[Number].value * evaluate(repMap, r).asInstanceOf[Number].value)
+    case Div(l, r)              => Number(evaluate(repMap, l).asInstanceOf[Number].value / evaluate(repMap, r).asInstanceOf[Number].value)
+    case Mod(l, r)              => Number(evaluate(repMap, l).asInstanceOf[Number].value % evaluate(repMap, r).asInstanceOf[Number].value)
+    case Loop(l, r)             => Number(1)
+    case Cond(l, m, r)          => Number(1)
+    case Block(statements @ _*) => Number(1)
+    case Assign(l, r)           => Number(1) //use map syntax. Key is content of left.
+    case Variable(m)            => {
+      if(repMap.contains(m)){
+        Number(repMap(m).asInstanceOf[Number].value))
+      }else{
+          throw new IllegalArgumentException("Variable does not exist in memory")
+        }
+      }
   }
 
   def size(e: Expr): Int = e match {
@@ -42,6 +61,30 @@ object behaviors {
     case Times(l, r) => buildExprString(prefix, "Times", toFormattedString(prefix + INDENT)(l), toFormattedString(prefix + INDENT)(r))
     case Div(l, r)   => buildExprString(prefix, "Div", toFormattedString(prefix + INDENT)(l), toFormattedString(prefix + INDENT)(r))
     case Mod(l, r)   => buildExprString(prefix, "Mod", toFormattedString(prefix + INDENT)(l), toFormattedString(prefix + INDENT)(r))
+    case Loop(l, r)  => buildExprString(prefix, "Loop", toFormattedString(prefix + INDENT)(l), toFormattedString(prefix + INDENT)(r))
+
+    case Cond(l, m, r) => {
+
+      if (r.toString == "Block(List())") {
+        buildExprString(prefix, "Conditional", toFormattedString(prefix + INDENT)(m), toFormattedString(prefix + INDENT)(l))
+      } else {
+        buildTriExprString(prefix, "Conditional", toFormattedString(prefix + INDENT)(m), toFormattedString(prefix + INDENT)(l), toFormattedString(prefix + INDENT)(r))
+
+      }
+
+    }
+
+    case Block(statements @ _*) => mapToFunction(prefix, statements, "Block")
+    case Assign(l, r)           => buildExprString(prefix, "Assignment", toFormattedString(prefix + INDENT)(l), toFormattedString(prefix + INDENT)(r))
+    case Variable(x)            => prefix + x.toString
+
+  }
+
+  def mapToFunction(prefix: String, e: Seq[Expr], nodeString: String): String = {
+    val result = new StringBuilder(prefix)
+    val strings = e.map(expr => toFormattedString(prefix)(expr))
+    strings.foreach(strings => result.append(strings))
+    result.toString
   }
 
   def toFormattedString(e: Expr): String = toFormattedString("")(e)
@@ -53,6 +96,22 @@ object behaviors {
     result.append(EOL)
     result.append(leftString)
     result.append(", ")
+    result.append(EOL)
+    result.append(rightString)
+    result.append(")")
+    result.toString
+  }
+
+  def buildTriExprString(prefix: String, nodeString: String, Condition: String, leftString: String, rightString: String) = {
+    val result = new StringBuilder(prefix)
+    result.append(nodeString)
+    result.append("(")
+    result.append(EOL)
+    result.append(leftString)
+    result.append(", ")
+    result.append(EOL)
+    result.append(Condition)
+    result.append(")Else( ")
     result.append(EOL)
     result.append(rightString)
     result.append(")")
