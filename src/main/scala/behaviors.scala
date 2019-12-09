@@ -2,6 +2,7 @@ package edu.luc.cs.laufer.cs473.expressions
 
 import ast._
 import scala.collection.mutable.Map
+import scala.util.{Try, Success, Failure}
 
 object behaviors {
 
@@ -13,24 +14,67 @@ object behaviors {
   }
 
   def evaluate(repMap: Map[String, Value], e: Expr): Value = e match {
-    case Constant(c)            => Number(c)
-    case UMinus(r)              => Number(-evaluate(repMap, r).asInstanceOf[Number].value)
-    case Plus(l, r)             => Number(evaluate(repMap, l).asInstanceOf[Number].value + evaluate(repMap, r).asInstanceOf[Number].value)
-    case Minus(l, r)            => Number(evaluate(repMap, l).asInstanceOf[Number].value - evaluate(repMap, r).asInstanceOf[Number].value)
-    case Times(l, r)            => Number(evaluate(repMap, l).asInstanceOf[Number].value * evaluate(repMap, r).asInstanceOf[Number].value)
-    case Div(l, r)              => Number(evaluate(repMap, l).asInstanceOf[Number].value / evaluate(repMap, r).asInstanceOf[Number].value)
-    case Mod(l, r)              => Number(evaluate(repMap, l).asInstanceOf[Number].value % evaluate(repMap, r).asInstanceOf[Number].value)
-    case Loop(l, r)             => Number(1)
-    case Cond(l, m, r)          => Number(1)
-    case Block(statements @ _*) => Number(1)
-    case Assign(l, r)           => Number(1) //use map syntax. Key is content of left.
-    case Variable(m)            => {
-      if(repMap.contains(m)){
-        Number(repMap(m).asInstanceOf[Number].value))
-      }else{
-          throw new IllegalArgumentException("Variable does not exist in memory")
+    case Constant(c) => Number(c)
+    case UMinus(r)   => Number(-evaluate(repMap, r).asInstanceOf[Number].value)
+    case Plus(l, r)  => Number(evaluate(repMap, l).asInstanceOf[Number].value + evaluate(repMap, r).asInstanceOf[Number].value)
+    case Minus(l, r) => Number(evaluate(repMap, l).asInstanceOf[Number].value - evaluate(repMap, r).asInstanceOf[Number].value)
+    case Times(l, r) => Number(evaluate(repMap, l).asInstanceOf[Number].value * evaluate(repMap, r).asInstanceOf[Number].value)
+    case Div(l, r)   => Number(evaluate(repMap, l).asInstanceOf[Number].value / evaluate(repMap, r).asInstanceOf[Number].value)
+    case Mod(l, r)   => Number(evaluate(repMap, l).asInstanceOf[Number].value % evaluate(repMap, r).asInstanceOf[Number].value)
+    case Loop(l, r)  => Number(1)
+
+    case Cond(guard, thenBranch, elseBranch) => {
+      evaluate(repMap, guard) match {
+        case (Value.NULL) => evaluate(repMap, elseBranch)
+        case (_)          => evaluate(repMap, thenBranch)
+        //case f @ Failure(_)     => f
+      }
+    }
+
+    case Block(expressions @ _*) => {
+      // TODO http://stackoverflow.com/questions/12892701/abort-early-in-a-fold
+      val i = expressions.iterator
+      var result: Value = Value.NULL
+      while (i.hasNext)
+        evaluate(repMap, i.next()) match {
+          case r => result = r.asInstanceOf[Number]
+          //case f@Failure(_) => return f
+        }
+
+      result
+    }
+
+    case Assign(left, right) => {
+      repMap(left.asInstanceOf[Variable].name) = evaluate(repMap, right)
+      return null
+
+    }
+
+    case Variable(name) => {
+      if (repMap.contains(name)) {
+        repMap(name)
+        //Number(repMap().asInstanceOf[Number].value) //passes key to value
+      } else {
+        throw new IllegalArgumentException("Variable does not exist in memory")
+      }
+    }
+
+    case Loop(l, r) => {
+      var catchcond: Int = 0
+      while (catchcond == 0) {
+        evaluate(repMap, l) match {
+          case (v)          => evaluate(repMap, r)
+          case (Value.NULL) => return (Value.NULL)
+
+          //case Success(Value.NULL) => return Success(Value.NULL)
+          //case Success(v)          => evaluate(memory, r)
+          //case f @ Failure(_) => {
+          //return f
         }
       }
+      return Number(0)
+    }
+    //Success(Value.NULL)
   }
 
   def size(e: Expr): Int = e match {
