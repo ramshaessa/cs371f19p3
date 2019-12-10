@@ -7,7 +7,6 @@ import org.jline.terminal.TerminalBuilder
 import executor.Value
 import PrettyPrinter._
 
-
 object CombinatorCalculator extends App {
   val terminal = TerminalBuilder.terminal
   val reader = LineReaderBuilder.builder.terminal(terminal).build

@@ -41,13 +41,13 @@ object CombinatorParser extends JavaTokenParsers {
   def factor: Parser[Expr] = (
     //rep1sep(ident, ".") ^^ { case reference => Select(reference: _*) }
     wholeNumber ^^ { case s => Constant(s.toInt) }
-      | ident ^^ { case i => Variable(i) }
-      | "+" ~> factor ^^ { case e => e }
-      | "-" ~> factor ^^ { case e => UMinus(e) }
-      | "(" ~ expr ~ ")" ^^ { case _ ~ e ~ _ => e }
-      | ident ^^ { case s => Variable(s.toString) }
-    //| struct
-    )
+    | ident ^^ { case i => Variable(i) }
+    | "+" ~> factor ^^ { case e => e }
+    | "-" ~> factor ^^ { case e => UMinus(e) }
+    | "(" ~ expr ~ ")" ^^ { case _ ~ e ~ _ => e }
+    | ident ^^ { case s => Variable(s.toString) }
+  //| struct
+  )
 
   def field: Parser[(String, Expr)] =
     ident ~ ":" ~ expr ^^ { case i ~ ":" ~ e => (i, e) }
@@ -55,11 +55,11 @@ object CombinatorParser extends JavaTokenParsers {
   /** statement   ::= expression ";" | assignment | conditional | loop | block */
   def statement: Parser[Expr] = (
     expr ~ ";" ^^ { case e ~ _ => e }
-      | assignment
-      | conditional
-      | loop
-      | block
-    )
+    | assignment
+    | conditional
+    | loop
+    | block
+  )
 
   /** assignment  ::= ident "=" expression ";" */
   // Assignment(Variable(...)..)
