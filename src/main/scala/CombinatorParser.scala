@@ -1,7 +1,7 @@
 package edu.luc.cs.laufer.cs473.expressions
 
 import scala.util.parsing.combinator.JavaTokenParsers
-import ast._
+import ast.{Expr, _}
 
 object CombinatorParser extends JavaTokenParsers {
 
@@ -39,18 +39,24 @@ object CombinatorParser extends JavaTokenParsers {
   */
   /** factor ::= wholeNumber | "+" factor | "-" factor | "(" expr ")" */
   def factor: Parser[Expr] = (
-    //rep1sep(ident, ".") ^^ { case reference => Select(reference: _*) }
-    wholeNumber ^^ { case s => Constant(s.toInt) }
+    rep1sep(ident, ".") ^^ { case reference => Select(reference) }
+    | wholeNumber ^^ { case s => Constant(s.toInt) }
     | ident ^^ { case i => Variable(i) }
     | "+" ~> factor ^^ { case e => e }
     | "-" ~> factor ^^ { case e => UMinus(e) }
     | "(" ~ expr ~ ")" ^^ { case _ ~ e ~ _ => e }
     | ident ^^ { case s => Variable(s.toString) }
-  //| struct
+    | struct
   )
 
   def field: Parser[(String, Expr)] =
     ident ~ ":" ~ expr ^^ { case i ~ ":" ~ e => (i, e) }
+
+  def struct: Parser[Expr] =
+    "{" ~ "}" ^^ { case "{" ~ "}" => Struct(List[(String, Expr)]()) } |
+      "{" ~ rep1sep(field, ",") ~ "}" ^^ {
+        case _ ~ fs ~ _ => Struct(fs)
+      }
 
   /** statement   ::= expression ";" | assignment | conditional | loop | block */
   def statement: Parser[Expr] = (

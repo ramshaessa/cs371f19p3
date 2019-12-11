@@ -18,6 +18,6 @@ case class Conditional(condition: Expr, left: Expr, right: Expr) extends Trinary
 case class Loop(condition: Expr, block: Expr) extends BinaryExpr(condition, block)
 case class Block(statements: Expr*) extends Expr
 case class Field(ident: String, expr: Expr) extends Expr
-case class Struct(fields: (String, Expr)*) extends Expr
-case class Select(items: String*) extends Expr
+case class Struct(fields: List[(String, Expr)]) extends Expr
+case class Select(items: List[String]) extends Expr
 

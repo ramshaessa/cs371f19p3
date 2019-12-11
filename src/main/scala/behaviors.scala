@@ -68,6 +68,7 @@ object behaviors {
           case f @ Failure(_)      => f
         }
       }
+
       case Loop(l, r) => {
         def doLoop(): Result = {
           while (true) {
@@ -191,6 +192,8 @@ object behaviors {
     result.append(EOL)
     result.toString
   }
+
+
 
   val EOL = scala.util.Properties.lineSeparator
   val INDENT = ".."
